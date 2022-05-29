@@ -10,6 +10,7 @@ class EmojiArtDocument : ObservableObject{
     
     @Published private(set) var model : EmojiArtModel{
         didSet{
+            autoSave()
             if model.backgroud != oldValue.backgroud{
                 fetchBackgroundImageDataIfNecessary()
             }
@@ -72,10 +73,53 @@ class EmojiArtDocument : ObservableObject{
 
     }
     init(){
-        model = EmojiArtModel()
-        model.addEmoji( "😇", at:( -200, 100), size: 40)
-        model.addEmoji( "🤬", at : (50, 100), size: 20)
+        //尝试获取路径，并通过路径url初始化Model
+        if let url = Autosave.url, let autosavedEmojiArt = try? EmojiArtModel(url: url) {
+            model = autosavedEmojiArt //恢复初始化成功的数据
+            fetchBackgroundImageDataIfNecessary()//抓取远程图片
+        } else {
+            model = EmojiArtModel() //原来的初始化
+        }
+
+        //model.addEmoji( "😇", at:( -200, 100), size: 40)
+        //model.addEmoji( "🤬", at : (50, 100), size: 20)
         
+    }
+    
+    private func autoSave(){
+        if let url = Autosave.url {
+            save(to: url)
+        }
+            
+    }
+    
+    //自动保存时获取url路径
+    private struct Autosave {
+        static let filename = "Autosaved.emojiart"//被保存的默认名称
+        //当使用Autosave.url时获取到文档保存的URL路径(Optinal类型)
+        static var url: URL? {
+            //获取到沙箱里的document目录的url
+            let documentDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first //这是一个跨平台的功能
+            return documentDirectory?.appendingPathComponent(filename) //返回将文件名追回进入的URL(有可能是nil)
+        }
+        //static let coalescingInterval = 5.0 //保存间隔时间
+    }
+    
+    private func save(to url : URL){
+        let thisfunction = "(String(describing: self)).(#function)"
+        do{
+            let data : Data = try model.json()
+            print("\(thisfunction) json = \(String(data: data, encoding: .utf8) ?? "nil")") //打印被编码后的json
+            try data.write(to : url)
+            print("\(thisfunction) is success!")
+        }catch let  encodingError where encodingError is EncodingError{
+            //EncodingError是一种编码时才出现的错误类型
+            print("\(thisfunction) 无法将EmojiArt编码为JSON，因为: \(encodingError.localizedDescription)")
+            
+        }catch {
+            //非EncodingError错误的情况
+            print("\(thisfunction) 错误: \(error)")
+        }
     }
     
     var emojis : [EmojiArtModel.Emoji] {model.emojis}
