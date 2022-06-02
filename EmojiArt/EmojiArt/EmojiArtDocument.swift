@@ -10,10 +10,18 @@ class EmojiArtDocument : ObservableObject{
     
     @Published private(set) var model : EmojiArtModel{
         didSet{
-            autoSave()
+            schedualAutoSave()
             if model.backgroud != oldValue.backgroud{
                 fetchBackgroundImageDataIfNecessary()
             }
+        }
+    }
+    
+    private var autosaveTimer : Timer?
+    private func schedualAutoSave(){
+        autosaveTimer?.invalidate()
+        autosaveTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false){_ in
+            self.autoSave()
         }
     }
     
