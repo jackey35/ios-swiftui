@@ -8,12 +8,13 @@
 import SwiftUI
 
 struct EmojiArtDocumentView: View {
+    var defaultEmojFontSize : CGFloat = 40
     //从ViewModel获取要更新的值
     @ObservedObject var document:EmojiArtDocument
     var body: some View {
         VStack{
             docmentBody//画布主体
-            palette//可选择的表情
+            PaletteChooserView(emojFontSize: defaultEmojFontSize)//可选择的表情
         }
     }
     //先使用一个黄色填充画布
@@ -46,8 +47,37 @@ struct EmojiArtDocumentView: View {
                 
             }
             .gesture(zoomPanGesture().simultaneously(with: zoomGesture()))
+            .alert(item: $alertToShow) { alertToShow in
+                
+                alertToShow.alert()//闭包里必须返回一个alert，默认情况alertToShow == nil
+            }
+            //当backgroundImageFetchStatus状态发生变化时开始检测是否需要触发警告弹出
+            .onChange(of: document.backgroundImageFetchStatus) { status in
+                //当状态为failed时
+                switch status {
+                    case .failed(let url):
+                        showBackgroundImageFetchFailedAlert(url)//调用此方法显示警告,这里alertToShow被赋值了，所以警告将显示
+                    default:
+                        break
+                }
+            }
+
         }
     }
+    
+    @State private var alertToShow: IdentifiableAlert?//定义一个空的IdentifiableAlert来源于扩展的警告弹出格式
+     //警告内容格式
+    private func showBackgroundImageFetchFailedAlert(_ url: URL) {
+        //alertToShow的值将不是nil，这里将触发alert()
+        alertToShow = IdentifiableAlert(id: "抓取失败: " + url.absoluteString, alert: {
+            Alert(
+                title: Text("背景图像获取"),
+                message: Text("无法加载图像:(url)."),
+                dismissButton: .default(Text("OK"))
+            )
+        })
+    }
+    
     
     @State var steadyPanOffSet : CGSize = CGSize.zero
     @GestureState var gesturePanOffSet : CGSize = CGSize.zero
@@ -158,31 +188,9 @@ struct EmojiArtDocumentView: View {
     private func fontSize(for emoj : EmojiArtModel.Emoji) -> CGFloat{
         return CGFloat(emoj.size)
     }
-    //使用横向滚动视图展示测试表情
-    var palette: some View{
-        ScrollingEmojisView(emojis: testEmojis)
-            .font(.system(size: 40))
-    }
-    let testEmojis = "😀😷🦠💉👻👀🐶🌲🌎🌞🔥🍎⚽️🚗🚓🚲🛩🚁🚀🛸🏠⌚️🎁🗝🔐❤️⛔️❌❓✅⚠️🎶➕➖🏳️"
+
 }
-//横向滚动视图
-struct ScrollingEmojisView:View {
-    let emojis:String
-    var body: some View{
-        ScrollView(.horizontal){
-            HStack{
-                //emojis.map是学习知识点
-                //通过map{ $0 }将字符串映射成一个字符串数组
-                //let $0: String.Element所以需要String($0)
-                ForEach(emojis.map{ String($0) },id: \.self){ emoji in
-                    Text(emoji)
-                        .onDrag{NSItemProvider(object:emoji as NSString)}
-                }
-            }
-        }
-    }
-    
-}
+
 
 private struct DrawingConstants{
     static let defaultEmojiFontSize: CGFloat = 40//Emoji缩放比例

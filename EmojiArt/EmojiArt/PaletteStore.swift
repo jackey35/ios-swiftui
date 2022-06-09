@@ -1,7 +1,7 @@
 import SwiftUI
 
 //定义 调色板Model
-struct Palette: Identifiable, Codable {
+struct Palette: Identifiable, Codable,Hashable {
     var name: String //调色板名称
     var emojis: String //调色板里有哪些表情(多个)
     let id: Int //符合 Identifiable 协议
@@ -27,6 +27,7 @@ class PaletteStore: ObservableObject {
     }
     //自动将编码后的数据保存到UserDefaults
     private func storeInUserDefaults() {
+        
         UserDefaults.standard.set(try? JSONEncoder().encode(palettes), forKey: userDefaultsKey)
         //UserDefaults.standard.set(palettes.map { [$0.name,$0.emojis,String($0.id)] }, forKey: userDefaultsKey)//没有使用Codable就需要这样的方式去存，视频（1:34:39）
     }
@@ -36,6 +37,7 @@ class PaletteStore: ObservableObject {
         if let jsonData = UserDefaults.standard.data(forKey: userDefaultsKey),
            let decodedPalettes = try? JSONDecoder().decode(Array<Palette>.self, from: jsonData) {
             palettes = decodedPalettes
+            print("restor success,\(palettes)")
         }
         //未使用Codable所以下面的代码需要转化而代码量多，视频(1:37:16)
         //        if let palettesAsPropertyList = UserDefaults.standard.array(forKey: userDefaultsKey) as? [[String]] {

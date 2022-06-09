@@ -9,12 +9,12 @@ import SwiftUI
 
 @main
 struct EmojiArtApp: App {
-    let viewModel : EmojiArtDocument = EmojiArtDocument()
-    private let paletteStore = PaletteStore(named: "Default")//palette的ViewModel与View的接口
+    @StateObject private var viewModel : EmojiArtDocument = EmojiArtDocument()
+    @StateObject private var paletteStore = PaletteStore(named: "Default")//palette的ViewModel与View的接口
     
     var body: some Scene {
         WindowGroup {
-            EmojiArtDocumentView(document: viewModel)
+            EmojiArtDocumentView(document: viewModel).environmentObject(paletteStore)
         }
     }
 }
